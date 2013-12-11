@@ -38,6 +38,7 @@ typedef NS_ENUM(NSUInteger, FrameManipulation) {
 - (void) exerciseAmbiguityInLayoutForCurrentView;
 - (void) logHorizontalConstraintsForCurrentView;
 - (void) logVerticalConstraintsForCurrentView;
+- (void) toggleViewHidden;
 - (void) forceSetNeedsDisplay;
 - (void) forceSetNeedsLayout;
 - (void) forceReloadOfView;
@@ -48,6 +49,7 @@ typedef NS_ENUM(NSUInteger, FrameManipulation) {
 - (void) moveToPrevSiblingView;
 - (void) logCodeForCurrentViewChanges;
 - (void) manipulateFrame: (FrameManipulation) manipulation withBigStep: (BOOL) bigstep;
+
 - (void) enterGDB;
 
 @end

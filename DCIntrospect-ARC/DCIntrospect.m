@@ -129,43 +129,26 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 // See http://stackoverflow.com/questions/6617472/why-does-valueforkey-on-a-uitextfield-throws-an-exception-for-uitextinputtraits
 + (void)workaroundUITextInputTraitsPropertiesBug
 {
+	Method valueForKey = class_getInstanceMethod([NSObject class], @selector(valueForKey:));
+	const char *valueForKeyTypeEncoding = method_getTypeEncoding(valueForKey);
 	
 	unsigned int count = 0;
 	Class *classes = objc_copyClassList(&count);
-    NSMutableSet *visitedClasses = [[NSMutableSet alloc] initWithCapacity:count];
 	for (unsigned int i = 0; i < count; i++)
 	{
 		Class class = classes[i];
-        [self visitClassForWorkaroundUITextInputTraitsPropertiesBug:class visited:visitedClasses];
+		if (class_getInstanceMethod(class, NSSelectorFromString(@"textInputTraits")))
+		{
+			IMP originalValueForKey = class_replaceMethod(class, @selector(valueForKey:), (IMP)UITextInputTraits_valueForKey, valueForKeyTypeEncoding);
+			if (!originalValueForKey)
+				originalValueForKey = (IMP)[objc_getAssociatedObject([class superclass], originalValueForKeyIMPKey) pointerValue];
+			if (!originalValueForKey)
+				originalValueForKey = class_getMethodImplementation([class superclass], @selector(valueForKey:));
+			
+			objc_setAssociatedObject(class, originalValueForKeyIMPKey, [NSValue valueWithPointer:(void *)originalValueForKey], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+		}
 	}
 	free(classes);
-}
-
-+ (void)visitClassForWorkaroundUITextInputTraitsPropertiesBug:(Class) class visited:(NSMutableSet*) visited {
-    NSString *className = NSStringFromClass(class);
-    if (![visited containsObject:className]) {
-        [visited addObject:className];
-        Method valueForKey = class_getInstanceMethod([NSObject class], @selector(valueForKey:));
-        const char *valueForKeyTypeEncoding = method_getTypeEncoding(valueForKey);
-        if (class_getInstanceMethod(class, NSSelectorFromString(@"textInputTraits")))
-        {
-            Class superclass = [class superclass];
-            if (superclass) {
-                [self visitClassForWorkaroundUITextInputTraitsPropertiesBug:superclass visited:visited];
-            }
-            IMP originalValueForKey = nil;
-            if (!class_addMethod(class, @selector(valueForKey:), (IMP)UITextInputTraits_valueForKey, valueForKeyTypeEncoding)) {
-                originalValueForKey = class_replaceMethod(class, @selector(valueForKey:), (IMP)UITextInputTraits_valueForKey, valueForKeyTypeEncoding);
-            }
-            if (!originalValueForKey) {
-                originalValueForKey = (IMP)[objc_getAssociatedObject(superclass, originalValueForKeyIMPKey) pointerValue];
-            }
-            if (!originalValueForKey) {
-                originalValueForKey = class_getMethodImplementation(superclass, @selector(valueForKey:));
-            }
-            objc_setAssociatedObject(class, originalValueForKeyIMPKey, [NSValue valueWithPointer:(void *)originalValueForKey], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        }
-    }
 }
 
 + (DCIntrospect *)sharedIntrospector
@@ -520,6 +503,11 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 			[self logVerticalConstraintsForView:self.currentView];
 			return NO;
 		}
+        else if ([string isEqualToString:kDCIntrospectKeysToggleViewHidden])
+        {
+            [self toggleViewHidden];
+            return NO;
+        }
 		else if ([string isEqualToString:kDCIntrospectKeysSetNeedsDisplay])
 		{
 			[self forceSetNeedsDisplay];
@@ -821,6 +809,13 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 	// [UIView recursiveDescription] is a private method.  This should probably be re-written to avoid any potential problems.
 	NSLog(@"DCIntrospect-ARC: %@", [view recursiveDescription]);
 #endif
+}
+
+- (void)toggleViewHidden
+{
+    if (!self.on || !self.currentView)
+        return;
+    self.currentView.hidden = !self.currentView.hidden;
 }
 
 - (void)forceSetNeedsDisplay
@@ -1623,6 +1618,7 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 		[helpString appendFormat:@"<div><span class='name'>Decrease Height</span><div class='key'>alt + \uE232 / %@</div></div>", kDCIntrospectKeysDecreaseHeight];
 		[helpString appendFormat:@"<div><span class='name'>Increase Alpha</span><div class='key'>%@</div></div>", kDCIntrospectKeysIncreaseViewAlpha];
 		[helpString appendFormat:@"<div><span class='name'>Decrease Alpha</span><div class='key'>%@</div></div>", kDCIntrospectKeysDecreaseViewAlpha];
+        [helpString appendFormat:@"<div><span class='name'>Toggle Hidden</span><div class='key'>%@</div></div>", kDCIntrospectKeysToggleViewHidden];
 		[helpString appendFormat:@"<div><span class='name'>Log view code</span><div class='key'>%@</div></div>", kDCIntrospectKeysLogCodeForCurrentViewChanges];
 		[helpString appendString:@"<div class='spacer'></div>"];
 		
@@ -1925,8 +1921,7 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 BOOL iOS7OrHigher() {
     NSString *osVersion = @"7.0";
     NSString *currOsVersion = [[UIDevice currentDevice] systemVersion];
-    NSComparisonResult compareResult =  [currOsVersion compare:osVersion options:NSNumericSearch];
-    return compareResult == NSOrderedDescending || compareResult == NSOrderedSame;
+    return [currOsVersion compare:osVersion options:NSNumericSearch] == NSOrderedDescending;
 }
 
 @end

@@ -40,6 +40,7 @@
 
 #define kDCIntrospectKeysIncreaseViewAlpha				@"+"		// increases/decreases the selected views alpha value
 #define kDCIntrospectKeysDecreaseViewAlpha				@"-"		//
+#define kDCIntrospectKeysToggleViewHidden               @"z"        // toggles the selected view's hidden value
 
 #define kDCIntrospectKeysSetNeedsDisplay				@"d"		// calls setNeedsDisplay on selected view
 #define kDCIntrospectKeysSetNeedsLayout					@"l"		// calls setNeedsLayout on selected view

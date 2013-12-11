@@ -33,6 +33,7 @@
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysLogCodeForCurrentViewChanges modifierFlags:0 action:@selector(logCodeForCurrentViewChanges)],
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysIncreaseViewAlpha modifierFlags:0 action:@selector(increaseViewAlpha)],
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysDecreaseViewAlpha modifierFlags:0 action:@selector(decreaseViewAlpha)],
+             [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysToggleViewHidden modifierFlags:0 action:@selector(toggleViewHidden)],
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysSetNeedsDisplay modifierFlags:0 action:@selector(forceSetNeedsDisplay)],
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysSetNeedsLayout modifierFlags:0 action:@selector(forceSetNeedsLayout)],
              [UIKeyCommand keyCommandWithInput:kDCIntrospectKeysReloadData modifierFlags:0 action:@selector(reloadData)],
@@ -143,6 +144,10 @@
 
 - (void) decreaseViewAlpha {
     [self.keyboardInputDelegate manipulateFrame:FrameManipulationDecreaseAlpha withBigStep:NO];
+}
+
+- (void) toggleViewHidden {
+    [self.keyboardInputDelegate toggleViewHidden];
 }
 
 - (void) forceSetNeedsDisplay {
